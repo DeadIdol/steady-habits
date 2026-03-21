@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,11 @@ export function HabitDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{initialData?.id ? 'Edit Habit' : 'Add Habit'}</DialogTitle>
+          <DialogDescription>
+            {initialData?.id 
+              ? 'Modify your habit details, color, and default status.' 
+              : 'Create a new habit to track daily. Choose a name, color, and grouping.'}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">

@@ -4,7 +4,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Habit, Status, HabitLogs } from '@/lib/store';
-import { format, isSameDay, subDays } from 'date-fns';
+import { format, isSameDay, subDays, isBefore, parseISO, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Plus, GripVertical } from 'lucide-react';
 
@@ -117,22 +117,30 @@ export function HabitRow({
       <div className="w-[100px] shrink-0 p-2 text-center text-sm text-muted-foreground flex items-center justify-center bg-background border-l">
         {(() => {
           let streak = 0;
-          let d = new Date();
-          while (true) {
+          let d = startOfDay(new Date());
+          const createdDate = startOfDay(parseISO(habit.createdAt));
+          let safety = 0;
+
+          while (safety < 3650) { // Safety limit: 10 years
+            if (isBefore(d, createdDate)) break;
+            
             const k = format(d, 'yyyy-MM-dd');
             const s = logs[habit.id]?.[k] || habit.defaultStatus;
+            
             if (s === 'DONE') {
               streak++;
               d = subDays(d, 1);
             } else if (s === 'NOT_DONE') {
               if (isSameDay(d, new Date())) {
                 d = subDays(d, 1);
+                safety++;
                 continue;
               }
               break;
             } else {
               break;
             }
+            safety++;
           }
           return streak;
         })()}
