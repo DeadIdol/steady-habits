@@ -57,6 +57,7 @@ export function HabitDialog({
 
   const handleSave = () => {
     onSave({
+      id: initialData?.id,
       title,
       description,
       color,

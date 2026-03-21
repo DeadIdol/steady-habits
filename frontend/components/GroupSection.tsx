@@ -59,16 +59,17 @@ export function GroupSection({
       )}
 
       {(!collapsed || isUngrouped) && (
-          <SortableContext 
-            id={id} 
-            items={habits.map(h => h.id)} 
+        <>
+          {habits.length === 0 && !isUngrouped && (
+            <div key="placeholder" className="p-4 text-center text-sm text-muted-foreground border-b italic">
+              No habits in this group. Drop habits here.
+            </div>
+          )}
+          <SortableContext
+            id={id}
+            items={habits.map((h) => h.id)}
             strategy={verticalListSortingStrategy}
           >
-            {habits.length === 0 && !isUngrouped && (
-                <div className="p-4 text-center text-sm text-muted-foreground border-b italic">
-                    No habits in this group. Drop habits here.
-                </div>
-            )}
             {habits.map((habit, index) => (
               <HabitRow
                 key={habit.id}
@@ -81,6 +82,7 @@ export function GroupSection({
               />
             ))}
           </SortableContext>
+        </>
       )}
     </div>
   );

@@ -239,6 +239,7 @@ export function HabitTracker() {
             >
                 {/* Ungrouped Habits */}
                 <GroupSection
+                    key="ungrouped-section"
                     id="ungrouped"
                     isUngrouped
                     habits={ungroupedHabits.map(id => habits[id]).filter(Boolean)}
