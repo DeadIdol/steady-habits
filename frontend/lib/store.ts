@@ -79,16 +79,16 @@ export const useHabitStore = create<AppState>()(
       addHabit: (habitData, groupId) => {
         const id = uuidv4();
         const newHabit: Habit = {
-          id,
-          title: habitData.title || 'New Habit',
-          description: habitData.description || '',
-          color: habitData.color || DEFAULT_HABIT_COLOR,
-          defaultStatus: habitData.defaultStatus || 'NOT_DONE',
-          groupId: groupId,
+          title: 'New Habit',
+          description: '',
+          color: DEFAULT_HABIT_COLOR,
+          defaultStatus: 'NOT_DONE',
           hidden: false,
           archived: false,
           createdAt: new Date().toISOString(),
           ...habitData,
+          id, // Apply generated id LAST to ensure it is never undefined
+          groupId, // Ensure the explicitly passed groupId takes precedence
         };
 
         set((state) => {

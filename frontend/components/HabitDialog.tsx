@@ -56,14 +56,20 @@ export function HabitDialog({
   }, [open, initialData]);
 
   const handleSave = () => {
-    onSave({
-      id: initialData?.id,
+    const data: Partial<Habit> = {
       title,
       description,
       color,
       defaultStatus,
       groupId: groupId === 'ungrouped' ? undefined : groupId,
-    });
+    };
+    
+    // Only include the ID if we are editing an existing habit
+    if (initialData?.id) {
+        data.id = initialData.id;
+    }
+
+    onSave(data);
     onOpenChange(false);
   };
 
