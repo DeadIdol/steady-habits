@@ -15,6 +15,9 @@ interface HabitRowProps {
   onToggle: (habitId: string, date: string) => void;
   onEdit: (habit: Habit) => void;
   onInsertAfter: () => void;
+  groupTitle?: string;
+  isFirstInGroup?: boolean;
+  isLastInGroup?: boolean;
 }
 
 export function HabitRow({
@@ -24,6 +27,9 @@ export function HabitRow({
   onToggle,
   onEdit,
   onInsertAfter,
+  groupTitle,
+  isFirstInGroup,
+  isLastInGroup,
 }: HabitRowProps) {
   const {
     attributes,
@@ -46,14 +52,24 @@ export function HabitRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex w-full min-w-max border-b group/row", // min-w-max ensures it expands to hold all days
-        isDragging && "opacity-50 bg-accent z-50 shadow-xl"
+        "flex w-full min-w-max border-b group/row",
+        isDragging && "opacity-50 bg-accent z-50 shadow-xl",
+        isFirstInGroup && "border-t-2 border-t-foreground/20"
       )}
     >
-      {/* Title Column (Sticky Left) */}
+      {/* Group Column (Sticky Left 0) */}
+      <div className="sticky left-0 z-30 w-[40px] bg-muted/30 border-r flex items-center justify-center shrink-0">
+          {isFirstInGroup && groupTitle && (
+               <div className="rotate-180 [writing-mode:vertical-lr] text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                   {groupTitle}
+               </div>
+          )}
+      </div>
+
+      {/* Title Column (Sticky Left 40px) */}
       <div
         className={cn(
-            "sticky left-0 z-20 w-[200px] bg-background border-r p-2 flex items-center font-medium group cursor-pointer hover:bg-accent/50 transition-colors relative touch-none shrink-0",
+            "sticky left-[40px] z-20 w-[200px] bg-background border-r p-2 flex items-center font-medium group cursor-pointer hover:bg-accent/50 transition-colors relative touch-none shrink-0",
              isDragging && "bg-accent"
         )}
         onClick={() => onEdit(habit)}
