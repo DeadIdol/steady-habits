@@ -99,7 +99,7 @@ export function HabitRow({
               onClick={() => onToggle(habit.id, dateKey)}
               className={cn(
                 "w-full h-full min-h-[30px] rounded-sm transition-all duration-200",
-                status === 'NA' && "bg-muted/50",
+                status === 'NA' && "bg-gray-400",
                 status === 'NOT_DONE' &&
                   "bg-card border shadow-sm hover:border-primary/50",
                 status === 'DONE' && "text-white shadow-sm"
