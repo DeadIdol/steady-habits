@@ -208,10 +208,7 @@ export function HabitTracker() {
         <div className="inline-block min-w-full pb-20"> 
             {/* Header Row */}
             <div className="sticky top-0 z-30 flex w-full min-w-max border-b bg-background shadow-sm">
-                <div className="w-[40px] sticky left-0 z-50 bg-background border-r px-2 py-1 font-semibold flex items-end shrink-0 shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
-                    Grp
-                </div>
-                <div className="w-[200px] sticky left-[40px] z-40 bg-background border-r px-2 py-1 font-semibold flex items-end shrink-0 shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
+                <div className="w-[200px] sticky left-0 z-40 bg-background border-r px-2 py-1 font-semibold flex items-end shrink-0 shadow-[1px_0_0_0_rgba(0,0,0,0.1)]">
                     Habit
                 </div>
                 {days.map((day) => {

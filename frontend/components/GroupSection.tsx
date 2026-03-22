@@ -38,28 +38,33 @@ export function GroupSection({
   const [collapsed, setCollapsed] = React.useState(false);
 
   return (
-    <div ref={setNodeRef} className={cn("flex flex-col")}>
-      {/* Reduced visual header for Groups */}
-      {!isUngrouped && habits.length === 0 && (
-         <div className="flex w-full min-w-max border-b group/row bg-muted/10 h-10 items-center">
-            <div className="sticky left-0 z-30 w-[40px] border-r flex flex-col items-center justify-center h-full bg-muted/20">
-                 <div className="rotate-180 [writing-mode:vertical-lr] text-[8px] font-bold uppercase tracking-widest text-muted-foreground/50">
-                   {title}
-                 </div>
-                 {onDeleteGroup && (
-                    <Button variant="ghost" size="icon" className="h-4 w-4 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={onDeleteGroup}>
-                        <Trash2 className="w-2 h-2" />
-                    </Button>
-                 )}
-            </div>
-            <div className="sticky left-[40px] z-20 w-[200px] border-r p-2 text-xs italic text-muted-foreground flex items-center">
-                Empty group... drop habits here
-            </div>
-         </div>
+    <div ref={setNodeRef} className={cn("flex flex-col", !isUngrouped && "mt-4")}>
+      {!isUngrouped && (
+        <div className="sticky left-0 z-20 flex items-center p-2 bg-muted/30 font-semibold border-y">
+            <Button variant="ghost" size="icon" className="h-6 w-6 mr-1" onClick={() => setCollapsed(!collapsed)}>
+                {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+            <span className="flex-1">{title}</span>
+            {onDeleteGroup && (
+                 <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={onDeleteGroup}>
+                    <Trash2 className="w-4 h-4" />
+                </Button>
+            )}
+            
+            {/* Visual filler for the rest of the row to span the grid? 
+                Actually, this header is just a flex row. It doesn't align with the grid columns.
+                That's fine for a separator.
+            */}
+        </div>
       )}
 
       {(!collapsed || isUngrouped) && (
         <>
+          {habits.length === 0 && !isUngrouped && (
+            <div key="placeholder" className="p-4 text-center text-sm text-muted-foreground border-b italic">
+              No habits in this group. Drop habits here.
+            </div>
+          )}
           <SortableContext
             id={id}
             items={habits.map((h) => h.id)}
@@ -74,9 +79,6 @@ export function GroupSection({
                 onToggle={onToggle}
                 onEdit={onEdit}
                 onInsertAfter={() => onInsertAfter(index)}
-                groupTitle={title}
-                isFirstInGroup={!isUngrouped && index === 0}
-                isLastInGroup={!isUngrouped && index === habits.length - 1}
               />
             ))}
           </SortableContext>
