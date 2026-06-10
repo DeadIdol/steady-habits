@@ -62,6 +62,7 @@ interface AppState {
 
   setNotes: (notes: string) => void;
   importData: (data: Partial<AppState>) => void;
+  bulkUpdateLogs: (habitIds: string[], startDate: string, endDate: string, status: Status | null) => void;
 }
 
 const DEFAULT_HABIT_COLOR = '#22c55e'; // tailwind green-500
@@ -328,6 +329,28 @@ export const useHabitStore = create<AppState>()(
               notes: data.notes || state.notes,
               settings: data.settings ? { ...state.settings, ...data.settings } : state.settings
           }));
+      },
+
+      bulkUpdateLogs: (habitIds, startDate, endDate, status) => {
+          const dates = getDatesBetween(parseISO(startDate), parseISO(endDate));
+          
+          set((state) => {
+              const newLogs = { ...state.logs };
+              
+              habitIds.forEach(habitId => {
+                  const habitLogs = { ...(newLogs[habitId] || {}) };
+                  dates.forEach(dateKey => {
+                      if (status === null) {
+                          delete habitLogs[dateKey];
+                      } else {
+                          habitLogs[dateKey] = status;
+                      }
+                  });
+                  newLogs[habitId] = habitLogs;
+              });
+
+              return { logs: newLogs };
+          });
       },
     }),
     {

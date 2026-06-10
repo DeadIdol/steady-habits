@@ -3,7 +3,7 @@
 import React from 'react';
 import { format, isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Plus, FolderPlus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, Upload } from 'lucide-react';
+import { Plus, FolderPlus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, Upload, Layers } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -18,6 +18,7 @@ interface TrackerHeaderProps {
     onSetToday: () => void;
     onAddHabit: () => void;
     onAddGroup: () => void;
+    onBulkUpdateTrigger: () => void;
     onExport: () => void;
     onImportTrigger: () => void;
     fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -32,6 +33,7 @@ export function TrackerHeader({
     onSetToday,
     onAddHabit,
     onAddGroup,
+    onBulkUpdateTrigger,
     onExport,
     onImportTrigger,
     fileInputRef,
@@ -105,6 +107,10 @@ export function TrackerHeader({
                 </Button>
                 <Button onClick={onAddHabit} size="icon" className="sm:hidden">
                     <Plus className="w-4 h-4" />
+                </Button>
+
+                <Button variant="outline" onClick={onBulkUpdateTrigger} size="sm" className="hidden lg:flex" title="Mass Fill Cells">
+                    <Layers className="w-4 h-4 mr-2" /> Mass Fill
                 </Button>
             </div>
         </div>

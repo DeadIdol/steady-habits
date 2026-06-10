@@ -8,6 +8,7 @@ import { HabitDialog } from './HabitDialog';
 import { GroupSection } from './GroupSection';
 import { TrackerHeader } from './TrackerHeader';
 import { HabitGridHeader } from './HabitGridHeader';
+import { BulkUpdateDialog } from './BulkUpdateDialog';
 import { useWindowDimensions } from '@/hooks/useWindowDimensions';
 import { useTrackerDates } from '@/hooks/useTrackerDates';
 import { useDataPersistence } from '@/hooks/useDataPersistence';
@@ -40,10 +41,12 @@ export function HabitTracker() {
   const moveHabit = useHabitStore(state => state.moveHabit);
   const notes = useHabitStore(state => state.notes);
   const setNotes = useHabitStore(state => state.setNotes);
+  const bulkUpdateLogs = useHabitStore(state => state.bulkUpdateLogs);
 
   const [isMounted, setIsMounted] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Partial<Habit> | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Custom Hooks
@@ -58,13 +61,10 @@ export function HabitTracker() {
     })
   );
 
-  // Still use useLayoutEffect but we will try to appease the specific lint rule 
-  // by acknowledging that hydration mismatches are the reason for this pattern.
   useLayoutEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Standard Next.js hydration pattern
   if (!isMounted) return null;
 
   const findContainer = (id: string) => {
@@ -144,6 +144,8 @@ export function HabitTracker() {
       }
   };
 
+  const allHabits = Object.values(habits);
+
   return (
     <div className="flex flex-col h-full w-full max-w-full overflow-hidden bg-background text-foreground">
       <TrackerHeader 
@@ -154,6 +156,7 @@ export function HabitTracker() {
         onSetToday={setToday}
         onAddHabit={handleAddHabit}
         onAddGroup={handleAddGroup}
+        onBulkUpdateTrigger={() => setIsBulkUpdateOpen(true)}
         onExport={handleExport}
         onImportTrigger={triggerImport}
         fileInputRef={fileInputRef}
@@ -227,6 +230,13 @@ export function HabitTracker() {
         groups={groups}
         onSave={handleSaveHabit}
         onDelete={editingHabit?.id ? handleDeleteHabit : undefined}
+      />
+
+      <BulkUpdateDialog 
+        open={isBulkUpdateOpen}
+        onOpenChange={setIsBulkUpdateOpen}
+        habits={allHabits}
+        onSave={bulkUpdateLogs}
       />
     </div>
   );
