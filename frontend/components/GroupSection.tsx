@@ -3,19 +3,17 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Habit, HabitLogs, Group } from '@/lib/store';
+import { Habit } from '@/lib/store';
 import { HabitRow } from './HabitRow';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Trash2, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface GroupSectionProps {
   id: string; // Group ID or 'ungrouped'
   title?: string;
   habits: Habit[];
   days: Date[];
-  logs: HabitLogs;
-  onToggle: (habitId: string, date: string) => void;
   onEdit: (habit: Habit) => void;
   onInsertAfter: (index: number) => void;
   onDeleteGroup?: () => void;
@@ -27,8 +25,6 @@ export function GroupSection({
   title,
   habits,
   days,
-  logs,
-  onToggle,
   onEdit,
   onInsertAfter,
   onDeleteGroup,
@@ -50,11 +46,6 @@ export function GroupSection({
                     <Trash2 className="w-4 h-4" />
                 </Button>
             )}
-            
-            {/* Visual filler for the rest of the row to span the grid? 
-                Actually, this header is just a flex row. It doesn't align with the grid columns.
-                That's fine for a separator.
-            */}
         </div>
       )}
 
@@ -75,8 +66,6 @@ export function GroupSection({
                 key={habit.id}
                 habit={habit}
                 days={days}
-                logs={logs}
-                onToggle={onToggle}
                 onEdit={onEdit}
                 onInsertAfter={() => onInsertAfter(index)}
               />

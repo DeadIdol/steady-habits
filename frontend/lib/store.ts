@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import { startOfDay, parseISO, isBefore, format, subDays, addDays, isAfter, isSameDay } from 'date-fns';
+import { startOfDay, parseISO, isBefore, format, subDays, addDays, isSameDay } from 'date-fns';
 
 export type Status = 'DONE' | 'NOT_DONE' | 'NA';
 
@@ -175,7 +175,6 @@ export const useHabitStore = create<AppState>()(
         const todayKey = format(today, 'yyyy-MM-dd');
         const lastSyncedStr = state.settings.lastSyncedDate;
         
-        // If no lastSyncedDate, initialize to today and return
         if (!lastSyncedStr) {
             set({ settings: { ...state.settings, lastSyncedDate: todayKey } });
             return;
@@ -194,7 +193,6 @@ export const useHabitStore = create<AppState>()(
             
             datesToFill.forEach(dateKey => {
                 const date = parseISO(dateKey);
-                // Only fill if date is on or after creation, and log doesn't exist
                 if (!isBefore(date, createdDate) && habitLogs[dateKey] === undefined) {
                     habitLogs[dateKey] = habit.defaultStatus;
                 }
@@ -282,7 +280,6 @@ export const useHabitStore = create<AppState>()(
       }),
 
       moveHabit: (habitId, fromGroupId, toGroupId, newIndex) => set(state => {
-          // Remove from old
           const newGroups = { ...state.groups };
           let newUngrouped = [...state.ungroupedHabits];
 
@@ -292,7 +289,6 @@ export const useHabitStore = create<AppState>()(
               newUngrouped = newUngrouped.filter(id => id !== habitId);
           }
 
-          // Add to new
           if (toGroupId) {
               newGroups[toGroupId].habitIds = [
                   ...newGroups[toGroupId].habitIds.slice(0, newIndex),
@@ -324,7 +320,6 @@ export const useHabitStore = create<AppState>()(
           set((state) => ({
               ...state,
               ...data,
-              // Ensure critical fields exist
               habits: data.habits || {},
               groups: data.groups || {},
               groupOrder: data.groupOrder || [],
@@ -338,6 +333,11 @@ export const useHabitStore = create<AppState>()(
     {
       name: 'steady-habits-storage',
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+            state.syncLogs();
+        }
+      },
     }
   )
 );

@@ -3,16 +3,14 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Habit, Status, HabitLogs } from '@/lib/store';
-import { format, isSameDay, subDays, startOfDay } from 'date-fns';
+import { Habit, useHabitStore } from '@/lib/store';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Plus, GripVertical } from 'lucide-react';
 
 interface HabitRowProps {
   habit: Habit;
   days: Date[];
-  logs: HabitLogs;
-  onToggle: (habitId: string, date: string) => void;
   onEdit: (habit: Habit) => void;
   onInsertAfter: () => void;
 }
@@ -20,11 +18,12 @@ interface HabitRowProps {
 export function HabitRow({
   habit,
   days,
-  logs,
-  onToggle,
   onEdit,
   onInsertAfter,
 }: HabitRowProps) {
+  const toggleHabitStatus = useHabitStore(state => state.toggleHabitStatus);
+  const habitLogs = useHabitStore(state => state.logs[habit.id] || {});
+
   const {
     attributes,
     listeners,
@@ -46,7 +45,7 @@ export function HabitRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex w-full min-w-max border-b group/row", // min-w-max ensures it expands to hold all days
+        "flex w-full min-w-max border-b group/row",
         isDragging && "opacity-50 bg-accent z-50 shadow-xl"
       )}
     >
@@ -59,7 +58,6 @@ export function HabitRow({
         onClick={() => onEdit(habit)}
         {...attributes}
       >
-        {/* Drag Handle */}
         <div 
             className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing p-1"
             {...listeners}
@@ -70,7 +68,6 @@ export function HabitRow({
         
         <span className="truncate pl-4 select-none">{habit.title}</span>
 
-        {/* Insert Button (Hover between titles) */}
         <div
           role="button"
           onClick={(e) => {
@@ -88,15 +85,15 @@ export function HabitRow({
       {/* Day Cells */}
       {days.map((day) => {
         const dateKey = format(day, 'yyyy-MM-dd');
-        const status = logs[habit.id]?.[dateKey];
+        const status = habitLogs[dateKey];
 
         return (
           <div
             key={`${habit.id}-${dateKey}`}
-            className="border-r p-1 w-[40px] shrink-0" // Fixed width for alignment
+            className="border-r p-1 w-[40px] shrink-0"
           >
             <button
-              onClick={() => onToggle(habit.id, dateKey)}
+              onClick={() => toggleHabitStatus(habit.id, dateKey)}
               className={cn(
                 "w-full h-full min-h-[30px] rounded-sm transition-all duration-200",
                 status === 'NA' && "bg-gray-400",
@@ -113,34 +110,9 @@ export function HabitRow({
         );
       })}
 
-      {/* Streak Column */}
+      {/* Streak Column (Blank for now) */}
       <div className="w-[100px] shrink-0 p-2 text-center text-sm text-muted-foreground flex items-center justify-center bg-background border-l">
-        {(() => {
-          let streak = 0;
-          let d = startOfDay(new Date());
-          let safety = 0;
-
-          while (safety < 3650) { // Safety limit: 10 years
-            const k = format(d, 'yyyy-MM-dd');
-            const s = logs[habit.id]?.[k];
-            
-            if (s === 'DONE') {
-              streak++;
-              d = subDays(d, 1);
-            } else if (s === 'NOT_DONE') {
-              if (isSameDay(d, new Date())) {
-                d = subDays(d, 1);
-                safety++;
-                continue;
-              }
-              break;
-            } else {
-              break;
-            }
-            safety++;
-          }
-          return streak;
-        })()}
+        {/* Streak logic removed for refactoring */}
       </div>
     </div>
   );
