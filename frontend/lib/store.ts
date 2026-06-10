@@ -150,7 +150,7 @@ export const useHabitStore = create<AppState>()(
           const { [id]: deleted, ...restHabits } = state.habits;
           const { [id]: deletedLogs, ...restLogs } = state.logs;
           
-          let newGroups = { ...state.groups };
+          const newGroups = { ...state.groups };
           let newUngrouped = [...state.ungroupedHabits];
 
           if (habit.groupId && newGroups[habit.groupId]) {
@@ -282,7 +282,7 @@ export const useHabitStore = create<AppState>()(
 
       moveHabit: (habitId, fromGroupId, toGroupId, newIndex) => set(state => {
           // Remove from old
-          let newGroups = { ...state.groups };
+          const newGroups = { ...state.groups };
           let newUngrouped = [...state.ungroupedHabits];
 
           if (fromGroupId) {

@@ -1,14 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useHabitStore, Habit, Status } from '@/lib/store';
+import { useHabitStore, Habit } from '@/lib/store';
 import { format, subDays, isSameDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Plus, FolderPlus, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { HabitDialog } from './HabitDialog';
-import { HabitRow } from './HabitRow';
 import { GroupSection } from './GroupSection';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   DndContext,
   closestCenter,
@@ -17,13 +21,10 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-  DragOverEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
-  SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
 export function HabitTracker() {
@@ -129,7 +130,7 @@ export function HabitTracker() {
     }
   };
 
-  const handleAddHabit = (index?: number) => {
+  const handleAddHabit = () => {
     setEditingHabit({ title: '', color: '#22c55e', defaultStatus: 'NOT_DONE' }); 
     setIsDialogOpen(true);
   };
@@ -177,9 +178,31 @@ export function HabitTracker() {
             <Button variant="outline" size="icon" onClick={() => shiftDate(-7)}>
                 <ChevronLeft className="w-4 h-4" />
             </Button>
-            <div className="text-sm font-medium border px-3 py-2 rounded-md min-w-[140px] text-center">
-                 {format(days[0], 'MMM d')} - {format(days[days.length - 1], 'MMM d')}
-            </div>
+            
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" className="text-sm font-medium min-w-[140px] justify-center gap-2">
+                        <CalendarIcon className="w-4 h-4 opacity-50" />
+                        {format(days[0], 'MMM d')} - {format(days[days.length - 1], 'MMM d')}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-3" align="center">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-xs font-medium text-muted-foreground">Jump to Date (end):</label>
+                        <input 
+                            type="date" 
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            value={format(endDate, 'yyyy-MM-dd')}
+                            onChange={(e) => {
+                                if (e.target.value) {
+                                    setEndDate(new Date(e.target.value + 'T12:00:00')); // Use noon to avoid TZ issues
+                                }
+                            }}
+                        />
+                    </div>
+                </PopoverContent>
+            </Popover>
+
             <Button variant="outline" size="icon" onClick={() => shiftDate(7)} disabled={isSameDay(endDate, new Date())}>
                 <ChevronRight className="w-4 h-4" />
             </Button>
@@ -252,7 +275,7 @@ export function HabitTracker() {
                         setEditingHabit(h);
                         setIsDialogOpen(true);
                     }}
-                    onInsertAfter={(idx) => handleAddHabit()}
+                    onInsertAfter={() => handleAddHabit()}
                 />
 
                 {/* Groups */}
@@ -272,7 +295,7 @@ export function HabitTracker() {
                                 setEditingHabit(h);
                                 setIsDialogOpen(true);
                             }}
-                            onInsertAfter={(idx) => handleAddHabit()}
+                            onInsertAfter={() => handleAddHabit()}
                             onDeleteGroup={() => handleDeleteGroup(groupId)}
                         />
                     );
