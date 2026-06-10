@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import { startOfDay, parseISO, isBefore, format, subDays, addDays, isSameDay } from 'date-fns';
+import { startOfDay, parseISO, isBefore, format, addDays, isSameDay } from 'date-fns';
 
 export type Status = 'DONE' | 'NOT_DONE' | 'NA';
 
@@ -61,7 +61,7 @@ interface AppState {
   moveHabit: (habitId: string, fromGroupId: string | null, toGroupId: string | null, newIndex: number) => void;
 
   setNotes: (notes: string) => void;
-  importData: (data: any) => void;
+  importData: (data: Partial<AppState>) => void;
 }
 
 const DEFAULT_HABIT_COLOR = '#22c55e'; // tailwind green-500
@@ -148,8 +148,8 @@ export const useHabitStore = create<AppState>()(
           const habit = state.habits[id];
           if (!habit) return state;
           
-          const { [id]: deleted, ...restHabits } = state.habits;
-          const { [id]: deletedLogs, ...restLogs } = state.logs;
+          const { [id]: _deleted, ...restHabits } = state.habits;
+          const { [id]: _deletedLogs, ...restLogs } = state.logs;
           
           const newGroups = { ...state.groups };
           let newUngrouped = [...state.ungroupedHabits];
@@ -248,7 +248,7 @@ export const useHabitStore = create<AppState>()(
           set(state => {
               const group = state.groups[id];
               const habitIdsToMove = group?.habitIds || [];
-              const { [id]: deleted, ...restGroups } = state.groups;
+              const { [id]: _deleted, ...restGroups } = state.groups;
               
               const updatedHabits = { ...state.habits };
               habitIdsToMove.forEach(hId => {
@@ -320,13 +320,13 @@ export const useHabitStore = create<AppState>()(
           set((state) => ({
               ...state,
               ...data,
-              habits: data.habits || {},
-              groups: data.groups || {},
-              groupOrder: data.groupOrder || [],
-              ungroupedHabits: data.ungroupedHabits || [],
-              logs: data.logs || {},
-              notes: data.notes || '',
-              settings: { ...state.settings, ...(data.settings || {}) }
+              habits: data.habits || state.habits,
+              groups: data.groups || state.groups,
+              groupOrder: data.groupOrder || state.groupOrder,
+              ungroupedHabits: data.ungroupedHabits || state.ungroupedHabits,
+              logs: data.logs || state.logs,
+              notes: data.notes || state.notes,
+              settings: data.settings ? { ...state.settings, ...data.settings } : state.settings
           }));
       },
     }),

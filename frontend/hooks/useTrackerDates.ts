@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { subDays, addDays, format } from 'date-fns';
+import { subDays, addDays } from 'date-fns';
 
 export function useTrackerDates(daysToShow: number) {
     const [endDate, setEndDate] = useState<Date>(new Date());

@@ -22,7 +22,7 @@ export function HabitRow({
   onInsertAfter,
 }: HabitRowProps) {
   const toggleHabitStatus = useHabitStore(state => state.toggleHabitStatus);
-  const habitLogs = useHabitStore(state => state.logs[habit.id] || {});
+  const habitLogs = useHabitStore(state => state.logs[habit.id]);
 
   const {
     attributes,
@@ -85,7 +85,7 @@ export function HabitRow({
       {/* Day Cells */}
       {days.map((day) => {
         const dateKey = format(day, 'yyyy-MM-dd');
-        const status = habitLogs[dateKey];
+        const status = habitLogs?.[dateKey];
 
         return (
           <div

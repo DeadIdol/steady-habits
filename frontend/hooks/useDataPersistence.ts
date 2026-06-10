@@ -43,7 +43,7 @@ export function useDataPersistence(fileInputRef: RefObject<HTMLInputElement | nu
                     importData(json);
                     window.location.reload();
                 }
-            } catch (err) {
+            } catch (_err) {
                 alert("Failed to parse JSON file.");
             }
         };
