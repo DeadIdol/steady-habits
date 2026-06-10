@@ -27,6 +27,8 @@ import {
 import {
   arrayMove,
   sortableKeyboardCoordinates,
+  SortableContext,
+  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
 export function HabitTracker() {
@@ -42,6 +44,7 @@ export function HabitTracker() {
   const addGroup = useHabitStore(state => state.addGroup);
   const deleteGroup = useHabitStore(state => state.deleteGroup);
   const moveHabit = useHabitStore(state => state.moveHabit);
+  const setGroupOrder = useHabitStore(state => state.setGroupOrder);
   const notes = useHabitStore(state => state.notes);
   const setNotes = useHabitStore(state => state.setNotes);
   const bulkUpdateLogs = useHabitStore(state => state.bulkUpdateLogs);
@@ -51,6 +54,7 @@ export function HabitTracker() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeType, setActiveType] = useState<'habit' | 'group' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Custom Hooks
@@ -82,14 +86,31 @@ export function HabitTracker() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const id = event.active.id as string;
+    setActiveId(id);
+    // If it's in habits, it's a habit. Otherwise it's a group.
+    setActiveType(habits[id] ? 'habit' : 'group');
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
+    setActiveType(null);
     if (!over) return;
 
+    // Handle Group Reordering
+    if (activeType === 'group') {
+        if (active.id !== over.id && over.id !== 'ungrouped') {
+            const oldIndex = groupOrder.indexOf(active.id as string);
+            const newIndex = groupOrder.indexOf(over.id as string);
+            if (oldIndex !== -1 && newIndex !== -1) {
+                setGroupOrder(arrayMove(groupOrder, oldIndex, newIndex));
+            }
+        }
+        return;
+    }
+
+    // Handle Habit Reordering
     const activeContainer = findContainer(active.id as string);
     const overContainer = findContainer(over.id as string);
 
@@ -182,6 +203,10 @@ export function HabitTracker() {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
+                {/* 
+                    Ungrouped is not sortable as a group, 
+                    but acts as a container for habits.
+                */}
                 <GroupSection
                     key="ungrouped-section"
                     id="ungrouped"
@@ -195,37 +220,56 @@ export function HabitTracker() {
                     onInsertAfter={() => handleAddHabit()}
                 />
 
-                {groupOrder.map(groupId => {
-                    const group = groups[groupId];
-                    if (!group) return null;
-                    return (
-                        <GroupSection
-                            key={groupId}
-                            id={groupId}
-                            title={group.title}
-                            habits={group.habitIds.map(id => habits[id]).filter(Boolean)}
-                            days={days}
-                            onEdit={(h) => {
-                                setEditingHabit(h);
-                                setIsDialogOpen(true);
-                            }}
-                            onInsertAfter={() => handleAddHabit()}
-                            onDeleteGroup={() => handleDeleteGroup(groupId)}
-                        />
-                    );
-                })}
+                <SortableContext 
+                    items={groupOrder} 
+                    strategy={verticalListSortingStrategy}
+                >
+                    {groupOrder.map(groupId => {
+                        const group = groups[groupId];
+                        if (!group) return null;
+                        return (
+                            <GroupSection
+                                key={groupId}
+                                id={groupId}
+                                title={group.title}
+                                habits={group.habitIds.map(id => habits[id]).filter(Boolean)}
+                                days={days}
+                                onEdit={(h) => {
+                                    setEditingHabit(h);
+                                    setIsDialogOpen(true);
+                                }}
+                                onInsertAfter={() => handleAddHabit()}
+                                onDeleteGroup={() => handleDeleteGroup(groupId)}
+                            />
+                        );
+                    })}
+                </SortableContext>
 
                 <DragOverlay>
-                    {activeId && habits[activeId] ? (
-                        <div className="opacity-80 shadow-2xl bg-background border rounded-md overflow-hidden">
-                            <HabitRow
-                                habit={habits[activeId]}
-                                days={days}
-                                onEdit={() => {}}
-                                onInsertAfter={() => {}}
-                                isOverlay
-                            />
-                        </div>
+                    {activeId ? (
+                        activeType === 'habit' && habits[activeId] ? (
+                            <div className="opacity-80 shadow-2xl bg-background border rounded-md overflow-hidden">
+                                <HabitRow
+                                    habit={habits[activeId]}
+                                    days={days}
+                                    onEdit={() => {}}
+                                    onInsertAfter={() => {}}
+                                    isOverlay
+                                />
+                            </div>
+                        ) : activeType === 'group' && groups[activeId] ? (
+                            <div className="opacity-80 shadow-2xl bg-background border rounded-md overflow-hidden min-w-[300px]">
+                                <GroupSection
+                                    id={activeId}
+                                    title={groups[activeId].title}
+                                    habits={groups[activeId].habitIds.map(id => habits[id]).filter(Boolean)}
+                                    days={days}
+                                    onEdit={() => {}}
+                                    onInsertAfter={() => {}}
+                                    isOverlay
+                                />
+                            </div>
+                        ) : null
                     ) : null}
                 </DragOverlay>
             </DndContext>
