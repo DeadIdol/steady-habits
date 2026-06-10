@@ -3,8 +3,8 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Habit, Status, HabitLogs } from '@/lib/store';
-import { format, isSameDay, subDays, isBefore, parseISO, startOfDay } from 'date-fns';
+import { Habit, Status, HabitLogs, getEffectiveStatus } from '@/lib/store';
+import { format, isSameDay, subDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Plus, GripVertical } from 'lucide-react';
 
@@ -88,7 +88,7 @@ export function HabitRow({
       {/* Day Cells */}
       {days.map((day) => {
         const dateKey = format(day, 'yyyy-MM-dd');
-        const status = logs[habit.id]?.[dateKey] || habit.defaultStatus;
+        const status = getEffectiveStatus(habit, logs, day);
 
         return (
           <div
@@ -118,14 +118,10 @@ export function HabitRow({
         {(() => {
           let streak = 0;
           let d = startOfDay(new Date());
-          const createdDate = startOfDay(parseISO(habit.createdAt));
           let safety = 0;
 
           while (safety < 3650) { // Safety limit: 10 years
-            if (isBefore(d, createdDate)) break;
-            
-            const k = format(d, 'yyyy-MM-dd');
-            const s = logs[habit.id]?.[k] || habit.defaultStatus;
+            const s = getEffectiveStatus(habit, logs, d);
             
             if (s === 'DONE') {
               streak++;

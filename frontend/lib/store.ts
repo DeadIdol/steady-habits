@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
+import { startOfDay, parseISO, isBefore, format, subDays, addDays } from 'date-fns';
 
 export type Status = 'DONE' | 'NOT_DONE' | 'NA';
 
@@ -28,6 +29,20 @@ export type HabitLog = Record<string, Status>;
 
 // Key is Habit ID
 export type HabitLogs = Record<string, HabitLog>;
+
+export const getEffectiveStatus = (habit: Habit, logs: HabitLogs, date: Date | string): Status => {
+  const dateKey = typeof date === 'string' ? date : format(date, 'yyyy-MM-dd');
+  const log = logs[habit.id]?.[dateKey];
+  if (log !== undefined) return log;
+
+  const targetDate = startOfDay(typeof date === 'string' ? parseISO(date) : date);
+  const createdDate = startOfDay(parseISO(habit.createdAt));
+  
+  if (isBefore(targetDate, createdDate)) {
+    return 'NA';
+  }
+  return habit.defaultStatus;
+};
 
 interface AppState {
   habits: Record<string, Habit>;
@@ -62,6 +77,17 @@ interface AppState {
 
 const DEFAULT_HABIT_COLOR = '#22c55e'; // tailwind green-500
 
+const getDatesBetween = (start: Date, end: Date) => {
+    const dates = [];
+    let curr = startOfDay(start);
+    const last = startOfDay(end);
+    while (curr <= last) {
+        dates.push(format(curr, 'yyyy-MM-dd'));
+        curr = addDays(curr, 1);
+    }
+    return dates;
+};
+
 export const useHabitStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -78,6 +104,7 @@ export const useHabitStore = create<AppState>()(
 
       addHabit: (habitData, groupId) => {
         const id = uuidv4();
+        const now = new Date();
         const newHabit: Habit = {
           title: 'New Habit',
           description: '',
@@ -85,45 +112,77 @@ export const useHabitStore = create<AppState>()(
           defaultStatus: 'NOT_DONE',
           hidden: false,
           archived: false,
-          createdAt: new Date().toISOString(),
+          createdAt: now.toISOString(),
           ...habitData,
           id, // Apply generated id LAST to ensure it is never undefined
           groupId, // Ensure the explicitly passed groupId takes precedence
         };
 
         set((state) => {
+            const newState: Partial<AppState> = {
+                habits: { ...state.habits, [id]: newHabit },
+            };
+
             if (groupId && state.groups[groupId]) {
-                return {
-                    habits: { ...state.habits, [id]: newHabit },
-                    groups: {
-                        ...state.groups,
-                        [groupId]: {
-                            ...state.groups[groupId],
-                            habitIds: [...state.groups[groupId].habitIds, id]
-                        }
+                newState.groups = {
+                    ...state.groups,
+                    [groupId]: {
+                        ...state.groups[groupId],
+                        habitIds: [...state.groups[groupId].habitIds, id]
                     }
                 };
             } else {
-                return {
-                    habits: { ...state.habits, [id]: newHabit },
-                    ungroupedHabits: [...state.ungroupedHabits, id]
-                };
+                newState.ungroupedHabits = [...state.ungroupedHabits, id];
             }
+
+            return newState;
         });
       },
 
       updateHabit: (id, updates) => {
-        set((state) => ({
-          habits: {
-            ...state.habits,
-            [id]: { ...state.habits[id], ...updates },
-          },
-        }));
+        set((state) => {
+          const habit = state.habits[id];
+          if (!habit) return state;
+
+          let newLogs = { ...state.logs };
+          
+          // If defaultStatus is changing, seal the past
+          if (updates.defaultStatus !== undefined && updates.defaultStatus !== habit.defaultStatus) {
+            const today = startOfDay(new Date());
+            const yesterday = subDays(today, 1);
+            const createdDate = startOfDay(parseISO(habit.createdAt));
+            
+            if (isBefore(createdDate, today)) {
+                const datesToSeal = getDatesBetween(createdDate, yesterday);
+                const habitLogs = { ...(newLogs[id] || {}) };
+                let changed = false;
+                datesToSeal.forEach(date => {
+                    if (habitLogs[date] === undefined) {
+                        habitLogs[date] = habit.defaultStatus;
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    newLogs[id] = habitLogs;
+                }
+            }
+          }
+
+          return {
+            habits: {
+              ...state.habits,
+              [id]: { ...habit, ...updates },
+            },
+            logs: newLogs,
+          };
+        });
       },
 
       deleteHabit: (id) => {
         set((state) => {
           const habit = state.habits[id];
+          if (!habit) return state;
+          
           const { [id]: deleted, ...restHabits } = state.habits;
           const { [id]: deletedLogs, ...restLogs } = state.logs;
           
@@ -150,10 +209,9 @@ export const useHabitStore = create<AppState>()(
         const habit = state.habits[habitId];
         if (!habit) return;
 
-        const currentLog = state.logs[habitId]?.[date];
-        let nextStatus: Status;
-        const currentStatus = currentLog ?? habit.defaultStatus;
+        const currentStatus = getEffectiveStatus(habit, state.logs, date);
 
+        let nextStatus: Status;
         if (currentStatus === 'NA') nextStatus = 'NOT_DONE';
         else if (currentStatus === 'NOT_DONE') nextStatus = 'DONE';
         else nextStatus = 'NA'; 
@@ -186,12 +244,9 @@ export const useHabitStore = create<AppState>()(
       deleteGroup: (id) => {
           set(state => {
               const group = state.groups[id];
-              // Move habits to ungrouped? Or delete them? Prompt says "Habits can be deleted...".
-              // Safest is to move to ungrouped or delete. Let's move to ungrouped for safety.
               const habitIdsToMove = group?.habitIds || [];
               const { [id]: deleted, ...restGroups } = state.groups;
               
-              // Update habits to remove groupId
               const updatedHabits = { ...state.habits };
               habitIdsToMove.forEach(hId => {
                   if (updatedHabits[hId]) updatedHabits[hId].groupId = undefined;
@@ -263,7 +318,6 @@ export const useHabitStore = create<AppState>()(
     {
       name: 'steady-habits-storage',
       storage: createJSONStorage(() => localStorage),
-      // Migration logic if needed, but for dev we can just clear storage or handle missing fields
     }
   )
 );
