@@ -42,7 +42,8 @@ export function HabitTracker() {
       deleteGroup, 
       moveHabit, 
       notes, 
-      setNotes 
+      setNotes,
+      syncLogs
   } = useHabitStore();
 
   const [isMounted, setIsMounted] = useState(false);
@@ -62,6 +63,7 @@ export function HabitTracker() {
 
   useEffect(() => {
     setIsMounted(true);
+    syncLogs();
     // Dynamic days calculation based on window width
     // 200px (left col) + 100px (streak) = 300px fixed.
     // 40px per day.

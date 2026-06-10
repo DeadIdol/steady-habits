@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import { startOfDay, parseISO, isBefore, format, subDays, addDays } from 'date-fns';
+import { startOfDay, parseISO, isBefore, format, subDays, addDays, isAfter, isSameDay } from 'date-fns';
 
 export type Status = 'DONE' | 'NOT_DONE' | 'NA';
 
@@ -30,20 +30,6 @@ export type HabitLog = Record<string, Status>;
 // Key is Habit ID
 export type HabitLogs = Record<string, HabitLog>;
 
-export const getEffectiveStatus = (habit: Habit, logs: HabitLogs, date: Date | string): Status => {
-  const dateKey = typeof date === 'string' ? date : format(date, 'yyyy-MM-dd');
-  const log = logs[habit.id]?.[dateKey];
-  if (log !== undefined) return log;
-
-  const targetDate = startOfDay(typeof date === 'string' ? parseISO(date) : date);
-  const createdDate = startOfDay(parseISO(habit.createdAt));
-  
-  if (isBefore(targetDate, createdDate)) {
-    return 'NA';
-  }
-  return habit.defaultStatus;
-};
-
 interface AppState {
   habits: Record<string, Habit>;
   groups: Record<string, Group>;
@@ -53,6 +39,7 @@ interface AppState {
   notes: string;
   settings: {
     startDate: string;
+    lastSyncedDate: string; // YYYY-MM-DD
     theme: 'light' | 'dark';
   };
 
@@ -61,6 +48,7 @@ interface AppState {
   updateHabit: (id: string, updates: Partial<Habit>) => void;
   deleteHabit: (id: string) => void;
   toggleHabitStatus: (habitId: string, date: string) => void;
+  syncLogs: () => void;
   
   // Group Actions
   addGroup: (title: string) => void;
@@ -98,13 +86,15 @@ export const useHabitStore = create<AppState>()(
       logs: {},
       notes: '',
       settings: {
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: format(new Date(), 'yyyy-MM-dd'),
+        lastSyncedDate: format(new Date(), 'yyyy-MM-dd'),
         theme: 'light',
       },
 
       addHabit: (habitData, groupId) => {
         const id = uuidv4();
         const now = new Date();
+        const dateKey = format(now, 'yyyy-MM-dd');
         const newHabit: Habit = {
           title: 'New Habit',
           description: '',
@@ -114,13 +104,17 @@ export const useHabitStore = create<AppState>()(
           archived: false,
           createdAt: now.toISOString(),
           ...habitData,
-          id, // Apply generated id LAST to ensure it is never undefined
-          groupId, // Ensure the explicitly passed groupId takes precedence
+          id, 
+          groupId,
         };
 
         set((state) => {
             const newState: Partial<AppState> = {
                 habits: { ...state.habits, [id]: newHabit },
+                logs: {
+                    ...state.logs,
+                    [id]: { [dateKey]: newHabit.defaultStatus }
+                }
             };
 
             if (groupId && state.groups[groupId]) {
@@ -140,42 +134,12 @@ export const useHabitStore = create<AppState>()(
       },
 
       updateHabit: (id, updates) => {
-        set((state) => {
-          const habit = state.habits[id];
-          if (!habit) return state;
-
-          let newLogs = { ...state.logs };
-          
-          // If defaultStatus is changing, seal the past
-          if (updates.defaultStatus !== undefined && updates.defaultStatus !== habit.defaultStatus) {
-            const today = startOfDay(new Date());
-            const yesterday = subDays(today, 1);
-            const createdDate = startOfDay(parseISO(habit.createdAt));
-            
-            if (isBefore(createdDate, today)) {
-                const datesToSeal = getDatesBetween(createdDate, yesterday);
-                const habitLogs = { ...(newLogs[id] || {}) };
-                let changed = false;
-                datesToSeal.forEach(date => {
-                    if (habitLogs[date] === undefined) {
-                        habitLogs[date] = habit.defaultStatus;
-                        changed = true;
-                    }
-                });
-                if (changed) {
-                    newLogs[id] = habitLogs;
-                }
-            }
-          }
-
-          return {
-            habits: {
-              ...state.habits,
-              [id]: { ...habit, ...updates },
-            },
-            logs: newLogs,
-          };
-        });
+        set((state) => ({
+          habits: {
+            ...state.habits,
+            [id]: { ...state.habits[id], ...updates },
+          },
+        }));
       },
 
       deleteHabit: (id) => {
@@ -204,24 +168,64 @@ export const useHabitStore = create<AppState>()(
         });
       },
 
-      toggleHabitStatus: (habitId, date) => {
+      syncLogs: () => {
+        const state = get();
+        const today = new Date();
+        const todayKey = format(today, 'yyyy-MM-dd');
+        const lastSyncedStr = state.settings.lastSyncedDate;
+        
+        // If no lastSyncedDate, initialize to today and return
+        if (!lastSyncedStr) {
+            set({ settings: { ...state.settings, lastSyncedDate: todayKey } });
+            return;
+        }
+
+        const lastSynced = parseISO(lastSyncedStr);
+        if (isSameDay(lastSynced, today)) return;
+
+        const datesToFill = getDatesBetween(addDays(lastSynced, 1), today);
+        if (datesToFill.length === 0) return;
+
+        const newLogs = { ...state.logs };
+        Object.values(state.habits).forEach(habit => {
+            const habitLogs = { ...(newLogs[habit.id] || {}) };
+            const createdDate = startOfDay(parseISO(habit.createdAt));
+            
+            datesToFill.forEach(dateKey => {
+                const date = parseISO(dateKey);
+                // Only fill if date is on or after creation, and log doesn't exist
+                if (!isBefore(date, createdDate) && habitLogs[dateKey] === undefined) {
+                    habitLogs[dateKey] = habit.defaultStatus;
+                }
+            });
+            newLogs[habit.id] = habitLogs;
+        });
+
+        set({
+            logs: newLogs,
+            settings: { ...state.settings, lastSyncedDate: todayKey }
+        });
+      },
+
+      toggleHabitStatus: (habitId, dateKey) => {
         const state = get();
         const habit = state.habits[habitId];
         if (!habit) return;
 
-        const currentStatus = getEffectiveStatus(habit, state.logs, date);
+        const currentStatus = state.logs[habitId]?.[dateKey];
 
         let nextStatus: Status;
-        if (currentStatus === 'NA') nextStatus = 'NOT_DONE';
+        if (currentStatus === undefined) nextStatus = habit.defaultStatus;
         else if (currentStatus === 'NOT_DONE') nextStatus = 'DONE';
-        else nextStatus = 'NA'; 
+        else if (currentStatus === 'DONE') nextStatus = 'NA';
+        else nextStatus = 'NOT_DONE'; 
 
         set((state) => ({
           logs: {
             ...state.logs,
             [habitId]: {
               ...(state.logs[habitId] || {}),
-              [date]: nextStatus,
+              [dateKey]: nextStatus,
             },
           },
         }));

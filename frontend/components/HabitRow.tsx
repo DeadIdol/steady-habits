@@ -3,7 +3,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Habit, Status, HabitLogs, getEffectiveStatus } from '@/lib/store';
+import { Habit, Status, HabitLogs } from '@/lib/store';
 import { format, isSameDay, subDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Plus, GripVertical } from 'lucide-react';
@@ -88,7 +88,7 @@ export function HabitRow({
       {/* Day Cells */}
       {days.map((day) => {
         const dateKey = format(day, 'yyyy-MM-dd');
-        const status = getEffectiveStatus(habit, logs, day);
+        const status = logs[habit.id]?.[dateKey];
 
         return (
           <div
@@ -100,14 +100,14 @@ export function HabitRow({
               className={cn(
                 "w-full h-full min-h-[30px] rounded-sm transition-all duration-200",
                 status === 'NA' && "bg-gray-400",
-                status === 'NOT_DONE' &&
-                  "bg-card border shadow-sm hover:border-primary/50",
-                status === 'DONE' && "text-white shadow-sm"
+                status === 'NOT_DONE' && "bg-red-500",
+                status === 'DONE' && "text-white shadow-sm",
+                status === undefined && "bg-card border shadow-sm hover:border-primary/50"
               )}
               style={{
                 backgroundColor: status === 'DONE' ? habit.color : undefined,
               }}
-              title={`${habit.title} - ${format(day, 'MMM d')}: ${status}`}
+              title={`${habit.title} - ${format(day, 'MMM d')}: ${status || 'No data'}`}
             />
           </div>
         );
@@ -121,7 +121,8 @@ export function HabitRow({
           let safety = 0;
 
           while (safety < 3650) { // Safety limit: 10 years
-            const s = getEffectiveStatus(habit, logs, d);
+            const k = format(d, 'yyyy-MM-dd');
+            const s = logs[habit.id]?.[k];
             
             if (s === 'DONE') {
               streak++;
