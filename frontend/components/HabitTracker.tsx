@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHabitStore, Habit } from '@/lib/store';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HabitDialog } from './HabitDialog';
+import { HabitRow } from './HabitRow';
 import { GroupSection } from './GroupSection';
 import { TrackerHeader } from './TrackerHeader';
 import { HabitGridHeader } from './HabitGridHeader';
@@ -20,6 +21,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -47,6 +50,7 @@ export function HabitTracker() {
   const [editingHabit, setEditingHabit] = useState<Partial<Habit> | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Custom Hooks
@@ -61,7 +65,7 @@ export function HabitTracker() {
     })
   );
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     setIsMounted(true);
   }, []);
 
@@ -77,8 +81,13 @@ export function HabitTracker() {
     return null;
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
     if (!over) return;
 
     const activeContainer = findContainer(active.id as string);
@@ -170,6 +179,7 @@ export function HabitTracker() {
             <DndContext 
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
                 <GroupSection
@@ -204,6 +214,20 @@ export function HabitTracker() {
                         />
                     );
                 })}
+
+                <DragOverlay>
+                    {activeId && habits[activeId] ? (
+                        <div className="opacity-80 shadow-2xl bg-background border rounded-md overflow-hidden">
+                            <HabitRow
+                                habit={habits[activeId]}
+                                days={days}
+                                onEdit={() => {}}
+                                onInsertAfter={() => {}}
+                                isOverlay
+                            />
+                        </div>
+                    ) : null}
+                </DragOverlay>
             </DndContext>
             
              <div className="sticky left-0 z-20 w-[200px] bg-background border-r border-b p-2 mt-4">

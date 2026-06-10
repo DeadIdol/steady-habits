@@ -13,6 +13,7 @@ interface HabitRowProps {
   days: Date[];
   onEdit: (habit: Habit) => void;
   onInsertAfter: () => void;
+  isOverlay?: boolean;
 }
 
 export function HabitRow({
@@ -20,6 +21,7 @@ export function HabitRow({
   days,
   onEdit,
   onInsertAfter,
+  isOverlay = false,
 }: HabitRowProps) {
   const toggleHabitStatus = useHabitStore(state => state.toggleHabitStatus);
   const habitLogs = useHabitStore(state => state.logs[habit.id]);
@@ -34,7 +36,7 @@ export function HabitRow({
   } = useSortable({ id: habit.id });
 
   const style = {
-    transform: CSS.Translate.toString(transform),
+    transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 'auto',
     position: isDragging ? 'relative' as const : undefined,
@@ -45,21 +47,25 @@ export function HabitRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex w-full min-w-max border-b group/row",
-        isDragging && "opacity-50 bg-accent z-50 shadow-xl"
+        "flex w-full min-w-max border-b group/row transition-colors",
+        isDragging && !isOverlay && "opacity-20 grayscale",
+        isOverlay && "bg-accent shadow-lg border-none"
       )}
     >
       {/* Title Column (Sticky Left) */}
       <div
         className={cn(
             "sticky left-0 z-20 w-[200px] bg-background border-r p-2 flex items-center font-medium group cursor-pointer hover:bg-accent/50 transition-colors relative touch-none shrink-0",
-             isDragging && "bg-accent"
+             isOverlay && "bg-transparent border-none"
         )}
         onClick={() => onEdit(habit)}
         {...attributes}
       >
         <div 
-            className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing p-1"
+            className={cn(
+                "absolute left-1 top-1/2 -translate-y-1/2 p-1",
+                isOverlay ? "opacity-100" : "opacity-0 group-hover:opacity-50 cursor-grab active:cursor-grabbing"
+            )}
             {...listeners}
             onClick={(e) => e.stopPropagation()}
         >
@@ -68,18 +74,20 @@ export function HabitRow({
         
         <span className="truncate pl-4 select-none">{habit.title}</span>
 
-        <div
-          role="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onInsertAfter();
-          }}
-          className="absolute -bottom-2.5 left-0 w-full h-5 z-50 flex items-center justify-center opacity-0 hover:opacity-100 hover:scale-110 transition-all cursor-pointer"
-        >
-          <div className="bg-primary text-primary-foreground rounded-full p-0.5 shadow-md">
-            <Plus className="w-3 h-3" />
-          </div>
-        </div>
+        {!isOverlay && (
+            <div
+                role="button"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onInsertAfter();
+                }}
+                className="absolute -bottom-2.5 left-0 w-full h-5 z-50 flex items-center justify-center opacity-0 hover:opacity-100 hover:scale-110 transition-all cursor-pointer"
+            >
+                <div className="bg-primary text-primary-foreground rounded-full p-0.5 shadow-md">
+                    <Plus className="w-3 h-3" />
+                </div>
+            </div>
+        )}
       </div>
 
       {/* Day Cells */}
@@ -93,7 +101,7 @@ export function HabitRow({
             className="border-r p-1 w-[40px] shrink-0"
           >
             <button
-              onClick={() => toggleHabitStatus(habit.id, dateKey)}
+              onClick={() => !isOverlay && toggleHabitStatus(habit.id, dateKey)}
               className={cn(
                 "w-full h-full min-h-[30px] rounded-sm transition-all duration-200",
                 status === 'NA' && "bg-gray-400",
@@ -104,13 +112,13 @@ export function HabitRow({
               style={{
                 backgroundColor: status === 'DONE' ? habit.color : undefined,
               }}
-              title={`${habit.title} - ${format(day, 'MMM d')}: ${status || 'No data'}`}
+              title={isOverlay ? "" : `${habit.title} - ${format(day, 'MMM d')}: ${status || 'No data'}`}
             />
           </div>
         );
       })}
 
-      {/* Streak Column (Blank for now) */}
+      {/* Streak Column */}
       <div className="w-[100px] shrink-0 p-2 text-center text-sm text-muted-foreground flex items-center justify-center bg-background border-l">
         {/* Streak logic removed for refactoring */}
       </div>
