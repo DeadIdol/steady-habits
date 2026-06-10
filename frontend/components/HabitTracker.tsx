@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useHabitStore, Habit } from '@/lib/store';
 import { format, subDays, isSameDay, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Plus, FolderPlus, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, FolderPlus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download, Upload } from 'lucide-react';
 import { HabitDialog } from './HabitDialog';
 import { GroupSection } from './GroupSection';
 import {
@@ -44,12 +44,14 @@ export function HabitTracker() {
       moveHabit, 
       notes, 
       setNotes,
-      syncLogs
+      syncLogs,
+      importData
   } = useHabitStore();
 
   const [isMounted, setIsMounted] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Partial<Habit> | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Date State
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -66,8 +68,6 @@ export function HabitTracker() {
     setIsMounted(true);
     syncLogs();
     // Dynamic days calculation based on window width
-    // 200px (left col) + 100px (streak) = 300px fixed.
-    // 40px per day.
     const handleResize = () => {
         const availableWidth = window.innerWidth - 300 - 40; // 40 padding
         const days = Math.floor(availableWidth / 40);
@@ -77,7 +77,7 @@ export function HabitTracker() {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [syncLogs]);
 
   const days = Array.from({ length: daysToShow }, (_, i) => {
     return subDays(endDate, daysToShow - 1 - i);
@@ -168,11 +168,59 @@ export function HabitTracker() {
       setEndDate(prev => addDays(prev, amount));
   };
 
+  const handleExport = () => {
+    const state = useHabitStore.getState();
+    // Create a clean object with only the state we want to persist
+    const exportData = {
+        habits: state.habits,
+        groups: state.groups,
+        groupOrder: state.groupOrder,
+        ungroupedHabits: state.ungroupedHabits,
+        logs: state.logs,
+        notes: state.notes,
+        settings: state.settings
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const exportFileDefaultName = `steady-habits-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', url);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target?.result as string);
+        if (window.confirm("Importing data will overwrite your current habits. Continue?")) {
+            importData(json);
+            window.location.reload(); 
+        }
+      } catch (err) {
+        alert("Failed to parse JSON file.");
+      }
+    };
+    reader.readAsText(file);
+    // Reset input
+    event.target.value = '';
+  };
+
   return (
     <div className="flex flex-col h-full w-full max-w-full overflow-hidden bg-background text-foreground">
       {/* Header / Controls */}
       <div className="p-4 border-b flex justify-between items-center shrink-0 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold hidden md:block">Steady Habits</h1>
+        <h1 className="text-2xl font-bold hidden lg:block">Steady Habits</h1>
         
         <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => shiftDate(-7)}>
@@ -195,7 +243,7 @@ export function HabitTracker() {
                             value={format(endDate, 'yyyy-MM-dd')}
                             onChange={(e) => {
                                 if (e.target.value) {
-                                    setEndDate(new Date(e.target.value + 'T12:00:00')); // Use noon to avoid TZ issues
+                                    setEndDate(new Date(e.target.value + 'T12:00:00'));
                                 }
                             }}
                         />
@@ -212,6 +260,22 @@ export function HabitTracker() {
         </div>
 
         <div className="flex gap-2">
+            <div className="hidden sm:flex border-r pr-2 mr-2 gap-2">
+                <Button variant="ghost" size="sm" onClick={handleExport} title="Export Data">
+                    <Download className="w-4 h-4 mr-2" /> Export
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} title="Import Data">
+                    <Upload className="w-4 h-4 mr-2" /> Import
+                </Button>
+                <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept=".json" 
+                    onChange={handleImport} 
+                />
+            </div>
+
             <Button variant="outline" onClick={handleAddGroup} size="sm" className="hidden sm:flex">
                 <FolderPlus className="w-4 h-4 mr-2" /> Group
             </Button>

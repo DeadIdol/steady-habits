@@ -61,6 +61,7 @@ interface AppState {
   moveHabit: (habitId: string, fromGroupId: string | null, toGroupId: string | null, newIndex: number) => void;
 
   setNotes: (notes: string) => void;
+  importData: (data: any) => void;
 }
 
 const DEFAULT_HABIT_COLOR = '#22c55e'; // tailwind green-500
@@ -317,6 +318,21 @@ export const useHabitStore = create<AppState>()(
 
       setNotes: (notes) => {
         set({ notes });
+      },
+
+      importData: (data) => {
+          set((state) => ({
+              ...state,
+              ...data,
+              // Ensure critical fields exist
+              habits: data.habits || {},
+              groups: data.groups || {},
+              groupOrder: data.groupOrder || [],
+              ungroupedHabits: data.ungroupedHabits || [],
+              logs: data.logs || {},
+              notes: data.notes || '',
+              settings: { ...state.settings, ...(data.settings || {}) }
+          }));
       },
     }),
     {
