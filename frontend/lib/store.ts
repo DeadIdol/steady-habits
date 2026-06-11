@@ -44,7 +44,7 @@ interface AppState {
   };
 
   // Actions
-  addHabit: (habit: Partial<Habit>, groupId?: string) => void;
+  addHabit: (habit: Partial<Habit>, groupId?: string, index?: number) => void;
   updateHabit: (id: string, updates: Partial<Habit>) => void;
   deleteHabit: (id: string) => void;
   toggleHabitStatus: (habitId: string, date: string) => void;
@@ -93,10 +93,14 @@ export const useHabitStore = create<AppState>()(
         theme: 'light',
       },
 
-      addHabit: (habitData, groupId) => {
+      addHabit: (habitData, groupIdArg, index) => {
         const id = uuidv4();
         const now = new Date();
         const dateKey = format(now, 'yyyy-MM-dd');
+        
+        // Priority: habitData.groupId (from dialog) > groupIdArg (from trigger)
+        const targetGroupId = habitData.groupId || groupIdArg;
+
         const newHabit: Habit = {
           title: 'New Habit',
           description: '',
@@ -107,7 +111,7 @@ export const useHabitStore = create<AppState>()(
           createdAt: now.toISOString(),
           ...habitData,
           id, 
-          groupId,
+          groupId: targetGroupId,
         };
 
         set((state) => {
@@ -119,16 +123,29 @@ export const useHabitStore = create<AppState>()(
                 }
             };
 
-            if (groupId && state.groups[groupId]) {
+            if (targetGroupId && state.groups[targetGroupId]) {
+                const habitIds = [...state.groups[targetGroupId].habitIds];
+                if (typeof index === 'number') {
+                    habitIds.splice(index + 1, 0, id);
+                } else {
+                    habitIds.push(id);
+                }
+
                 newState.groups = {
                     ...state.groups,
-                    [groupId]: {
-                        ...state.groups[groupId],
-                        habitIds: [...state.groups[groupId].habitIds, id]
+                    [targetGroupId]: {
+                        ...state.groups[targetGroupId],
+                        habitIds
                     }
                 };
             } else {
-                newState.ungroupedHabits = [...state.ungroupedHabits, id];
+                const ungroupedHabits = [...state.ungroupedHabits];
+                if (typeof index === 'number') {
+                    ungroupedHabits.splice(index + 1, 0, id);
+                } else {
+                    ungroupedHabits.push(id);
+                }
+                newState.ungroupedHabits = ungroupedHabits;
             }
 
             return newState;

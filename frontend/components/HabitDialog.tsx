@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -45,22 +45,16 @@ export function HabitDialog({
   const [defaultStatus, setDefaultStatus] = React.useState<Status>('NOT_DONE');
   const [groupId, setGroupId] = React.useState<string>('ungrouped');
 
-  // Reset local state when initialData changes or dialog opens
-  // We use a separate useEffect to handle the "initial load" of the form data
-  // but we must be careful. The lint rule is a suggestion, but in a Dialog
-  // it is common. To strictly follow the "React way", we could key the form.
-  // However, updating the setter to wrap the onOpenChange is better.
-  
-  const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
-        setTitle(initialData?.title || '');
-        setDescription(initialData?.description || '');
-        setColor(initialData?.color || '#22c55e');
-        setDefaultStatus(initialData?.defaultStatus || 'NOT_DONE');
-        setGroupId(initialData?.groupId || 'ungrouped');
+  // Sync state when initialData changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      setTitle(initialData?.title || '');
+      setDescription(initialData?.description || '');
+      setColor(initialData?.color || '#22c55e');
+      setDefaultStatus(initialData?.defaultStatus || 'NOT_DONE');
+      setGroupId(initialData?.groupId || 'ungrouped');
     }
-    onOpenChange(newOpen);
-  };
+  }, [open, initialData]);
 
   const handleSave = () => {
     const data: Partial<Habit> = {
@@ -80,7 +74,7 @@ export function HabitDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{initialData?.id ? 'Edit Habit' : 'Add Habit'}</DialogTitle>

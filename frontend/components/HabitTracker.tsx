@@ -55,6 +55,7 @@ export function HabitTracker() {
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<'habit' | 'group' | null>(null);
+  const [insertionIndex, setInsertionIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Custom Hooks
@@ -140,8 +141,14 @@ export function HabitTracker() {
     }
   };
 
-  const handleAddHabit = () => {
-    setEditingHabit({ title: '', color: '#22c55e', defaultStatus: 'NOT_DONE' }); 
+  const handleAddHabit = (groupId?: string, index?: number) => {
+    setEditingHabit({ 
+        title: '', 
+        color: '#22c55e', 
+        defaultStatus: 'NOT_DONE',
+        groupId: groupId || undefined
+    }); 
+    setInsertionIndex(index !== undefined ? index : null);
     setIsDialogOpen(true);
   };
 
@@ -149,9 +156,10 @@ export function HabitTracker() {
     if (habitData.id) {
         updateHabit(habitData.id, habitData);
     } else {
-        addHabit(habitData, habitData.groupId);
+        addHabit(habitData, habitData.groupId, insertionIndex !== null ? insertionIndex : undefined);
     }
     setEditingHabit(null);
+    setInsertionIndex(null);
   };
 
   const handleDeleteHabit = () => {
@@ -184,7 +192,7 @@ export function HabitTracker() {
         onShiftDate={shiftDate}
         onGoToDate={goToDate}
         onSetToday={setToday}
-        onAddHabit={handleAddHabit}
+        onAddHabit={() => handleAddHabit()}
         onAddGroup={handleAddGroup}
         onBulkUpdateTrigger={() => setIsBulkUpdateOpen(true)}
         onExport={handleExport}
@@ -217,7 +225,7 @@ export function HabitTracker() {
                         setEditingHabit(h);
                         setIsDialogOpen(true);
                     }}
-                    onInsertAfter={() => handleAddHabit()}
+                    onInsertAfter={(idx) => handleAddHabit(undefined, idx)}
                 />
 
                 <SortableContext 
@@ -238,7 +246,7 @@ export function HabitTracker() {
                                     setEditingHabit(h);
                                     setIsDialogOpen(true);
                                 }}
-                                onInsertAfter={() => handleAddHabit()}
+                                onInsertAfter={(idx) => handleAddHabit(groupId, idx)}
                                 onDeleteGroup={() => handleDeleteGroup(groupId)}
                             />
                         );
@@ -275,7 +283,7 @@ export function HabitTracker() {
             </DndContext>
             
              <div className="sticky left-0 z-20 w-[200px] bg-background border-r border-b p-2 mt-4">
-                <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={handleAddHabit}>
+                <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={() => handleAddHabit()}>
                     <Plus className="w-4 h-4 mr-2" /> Add Habit
                 </Button>
             </div>
@@ -293,7 +301,13 @@ export function HabitTracker() {
 
       <HabitDialog 
         open={isDialogOpen} 
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) {
+                setEditingHabit(null);
+                setInsertionIndex(null);
+            }
+        }}
         initialData={editingHabit || undefined}
         groups={groups}
         onSave={handleSaveHabit}
