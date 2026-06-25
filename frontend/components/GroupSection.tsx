@@ -4,7 +4,7 @@ import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Habit } from '@/lib/store';
+import { Habit, useHabitStore } from '@/lib/store';
 import { HabitRow } from './HabitRow';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,21 @@ export function GroupSection({
   };
 
   const [collapsed, setCollapsed] = React.useState(false);
+  const updateGroup = useHabitStore(state => state.updateGroup);
+  const [localTitle, setLocalTitle] = React.useState(title || '');
+
+  React.useEffect(() => {
+    setLocalTitle(title || '');
+  }, [title]);
+
+  const handleSave = () => {
+    const trimmed = localTitle.trim();
+    if (trimmed && trimmed !== title) {
+      updateGroup(id, { title: trimmed });
+    } else {
+      setLocalTitle(title || '');
+    }
+  };
 
   return (
     <div 
@@ -89,7 +104,20 @@ export function GroupSection({
                 {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </Button>
             
-            <span className="flex-1">{title}</span>
+            <input
+              type="text"
+              value={localTitle}
+              onChange={(e) => setLocalTitle(e.target.value)}
+              onBlur={handleSave}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur();
+                }
+                e.stopPropagation();
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 bg-transparent border-none outline-none focus:bg-background/80 px-1 py-0.5 rounded focus:ring-1 focus:ring-primary font-semibold text-sm cursor-text"
+            />
             
             {onDeleteGroup && (
                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={onDeleteGroup}>
