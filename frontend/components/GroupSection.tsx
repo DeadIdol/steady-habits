@@ -8,7 +8,7 @@ import { Habit } from '@/lib/store';
 import { HabitRow } from './HabitRow';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Trash2, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronRight, GripVertical, Plus } from 'lucide-react';
 
 interface GroupSectionProps {
   id: string; // Group ID or 'ungrouped'
@@ -16,7 +16,7 @@ interface GroupSectionProps {
   habits: Habit[];
   days: Date[];
   onEdit: (habit: Habit) => void;
-  onInsertAfter: (index: number) => void;
+  onInsertAfter: (index?: number) => void;
   onDeleteGroup?: () => void;
   isUngrouped?: boolean;
   isOverlay?: boolean;
@@ -102,8 +102,16 @@ export function GroupSection({
       {(!collapsed || isUngrouped) && (
         <div className={cn(isOverlay && "border-x border-b bg-background")}>
           {habits.length === 0 && !isUngrouped && !isOverlay && (
-            <div key="placeholder" className="p-4 text-center text-sm text-muted-foreground border-b italic bg-background">
-              No habits in this group. Drop habits here.
+            <div key="placeholder" className="p-4 text-center text-sm text-muted-foreground border-b italic bg-background flex flex-col items-center gap-2">
+              <span>No habits in this group. Drop habits here.</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-1"
+                onClick={() => onInsertAfter()}
+              >
+                <Plus className="w-4 h-4 mr-2" /> Add Habit
+              </Button>
             </div>
           )}
           <SortableContext
@@ -118,6 +126,7 @@ export function GroupSection({
                 days={days}
                 onEdit={onEdit}
                 onInsertAfter={() => onInsertAfter(index)}
+                onInsertBefore={index === 0 ? () => onInsertAfter(-1) : undefined}
               />
             ))}
           </SortableContext>

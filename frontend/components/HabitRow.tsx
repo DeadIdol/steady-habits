@@ -13,6 +13,7 @@ interface HabitRowProps {
   days: Date[];
   onEdit: (habit: Habit) => void;
   onInsertAfter: () => void;
+  onInsertBefore?: () => void;
   isOverlay?: boolean;
 }
 
@@ -21,6 +22,7 @@ export function HabitRow({
   days,
   onEdit,
   onInsertAfter,
+  onInsertBefore,
   isOverlay = false,
 }: HabitRowProps) {
   const toggleHabitStatus = useHabitStore(state => state.toggleHabitStatus);
@@ -55,7 +57,7 @@ export function HabitRow({
       {/* Title Column (Sticky Left) */}
       <div
         className={cn(
-            "sticky left-0 z-20 w-[200px] bg-background border-r p-2 flex items-center font-medium group cursor-pointer hover:bg-accent/50 transition-colors relative touch-none shrink-0",
+            "sticky left-0 z-20 group-hover/row:z-30 w-[200px] bg-background border-r p-2 flex items-center font-medium group cursor-pointer hover:bg-accent/50 transition-colors relative touch-none shrink-0",
              isOverlay && "bg-transparent border-none"
         )}
         onClick={() => onEdit(habit)}
@@ -73,6 +75,21 @@ export function HabitRow({
         </div>
         
         <span className="truncate pl-4 select-none">{habit.title}</span>
+
+        {!isOverlay && onInsertBefore && (
+            <div
+                role="button"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onInsertBefore();
+                }}
+                className="absolute -top-2.5 left-0 w-full h-5 z-50 flex items-center justify-center opacity-0 hover:opacity-100 hover:scale-110 transition-all cursor-pointer"
+            >
+                <div className="bg-primary text-primary-foreground rounded-full p-0.5 shadow-md">
+                    <Plus className="w-3 h-3" />
+                </div>
+            </div>
+        )}
 
         {!isOverlay && (
             <div
