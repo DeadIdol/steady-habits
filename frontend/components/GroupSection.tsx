@@ -20,6 +20,7 @@ interface GroupSectionProps {
   onDeleteGroup?: () => void;
   isUngrouped?: boolean;
   isOverlay?: boolean;
+  isAnyGroupDragging?: boolean;
 }
 
 export function GroupSection({
@@ -32,6 +33,7 @@ export function GroupSection({
   onDeleteGroup,
   isUngrouped = false,
   isOverlay = false,
+  isAnyGroupDragging = false,
 }: GroupSectionProps) {
   // We use useSortable for the group itself if it's not the "ungrouped" section
   const {
@@ -80,6 +82,8 @@ export function GroupSection({
     }
   };
 
+  const showContent = !isAnyGroupDragging && (isUngrouped || !collapsed);
+
   return (
     <div 
         ref={setContextRef} 
@@ -127,7 +131,7 @@ export function GroupSection({
         </div>
       )}
 
-      {(!collapsed || isUngrouped) && (
+      {showContent && (
         <div className={cn(isOverlay && "border-x border-b bg-background")}>
           {habits.length === 0 && !isUngrouped && !isOverlay && (
             <div key="placeholder" className="p-4 text-center text-sm text-muted-foreground border-b italic bg-background flex flex-col items-center gap-2">

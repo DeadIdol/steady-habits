@@ -226,6 +226,7 @@ export function HabitTracker() {
                         setIsDialogOpen(true);
                     }}
                     onInsertAfter={(idx) => handleAddHabit(undefined, idx)}
+                    isAnyGroupDragging={activeType === 'group'}
                 />
 
                 <SortableContext 
@@ -248,6 +249,7 @@ export function HabitTracker() {
                                 }}
                                 onInsertAfter={(idx) => handleAddHabit(groupId, idx)}
                                 onDeleteGroup={() => handleDeleteGroup(groupId)}
+                                isAnyGroupDragging={activeType === 'group'}
                             />
                         );
                     })}
@@ -275,6 +277,7 @@ export function HabitTracker() {
                                     onEdit={() => {}}
                                     onInsertAfter={() => {}}
                                     isOverlay
+                                    isAnyGroupDragging={activeType === 'group'}
                                 />
                             </div>
                         ) : null
