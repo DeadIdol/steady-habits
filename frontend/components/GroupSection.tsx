@@ -97,7 +97,7 @@ export function GroupSection({
       {!isUngrouped && (
         <div className="sticky left-0 z-20 flex items-center p-2 bg-muted/50 font-semibold border-y group/header">
             <div 
-                className="mr-1 p-1 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing hover:bg-accent rounded"
+                className="mr-1 p-1 opacity-40 group-hover/header:opacity-100 cursor-grab active:cursor-grabbing hover:bg-accent rounded"
                 {...attributes}
                 {...listeners}
             >

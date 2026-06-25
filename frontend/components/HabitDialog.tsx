@@ -84,99 +84,101 @@ export function HabitDialog({
               : 'Create a new habit to track daily. Choose a name, color, and grouping.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right">
-              Title
-            </Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="group" className="text-right">
-              Group
-            </Label>
-             <Select 
-                value={groupId} 
-                onValueChange={setGroupId}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select group" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ungrouped">Ungrouped</SelectItem>
-                {Object.values(groups).map(group => (
-                    <SelectItem key={group.id} value={group.id}>{group.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="description" className="text-right">
-              Description
-            </Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="color" className="text-right">
-              Color
-            </Label>
-            <div className="col-span-3 flex items-center gap-2">
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="title" className="text-right">
+                Title
+              </Label>
               <Input
-                id="color"
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-12 h-10 p-1"
-              />
-              <Input
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="flex-1"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="col-span-3"
               />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="group" className="text-right">
+                Group
+              </Label>
+               <Select 
+                  value={groupId} 
+                  onValueChange={setGroupId}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ungrouped">Ungrouped</SelectItem>
+                  {Object.values(groups).map(group => (
+                      <SelectItem key={group.id} value={group.id}>{group.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="color" className="text-right">
+                Color
+              </Label>
+              <div className="col-span-3 flex items-center gap-2">
+                <Input
+                  id="color"
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="w-12 h-10 p-1"
+                />
+                <Input
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="defaultStatus" className="text-right">
+                Default
+              </Label>
+              <Select 
+                  value={defaultStatus} 
+                  onValueChange={(v) => setDefaultStatus(v as Status)}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select default status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NOT_DONE">Not Done (Empty)</SelectItem>
+                  <SelectItem value="DONE">Done (Colored)</SelectItem>
+                  <SelectItem value="NA">N/A (Grey)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="defaultStatus" className="text-right">
-              Default
-            </Label>
-            <Select 
-                value={defaultStatus} 
-                onValueChange={(v) => setDefaultStatus(v as Status)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select default status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="NOT_DONE">Not Done (Empty)</SelectItem>
-                <SelectItem value="DONE">Done (Colored)</SelectItem>
-                <SelectItem value="NA">N/A (Grey)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter className="gap-2 sm:justify-between">
-          {initialData?.id && onDelete && (
-            <Button variant="destructive" onClick={onDelete}>
-              Delete
-            </Button>
-          )}
-           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-            </Button>
-            <Button onClick={handleSave}>Save</Button>
-           </div>
-        </DialogFooter>
+          <DialogFooter className="gap-2 sm:justify-between">
+            {initialData?.id && onDelete && (
+              <Button type="button" variant="destructive" onClick={onDelete}>
+                Delete
+              </Button>
+            )}
+             <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+              </Button>
+              <Button type="submit">Save</Button>
+             </div>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
