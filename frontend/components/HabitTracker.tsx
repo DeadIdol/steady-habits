@@ -286,8 +286,8 @@ export function HabitTracker() {
             </DndContext>
             
              <div className="sticky left-0 z-20 w-[200px] bg-background border-r border-b p-2 mt-4">
-                <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={() => handleAddHabit()}>
-                    <Plus className="w-4 h-4 mr-2" /> Add Habit
+                <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={() => handleAddGroup()}>
+                    <Plus className="w-4 h-4 mr-2" /> Add Group
                 </Button>
             </div>
         </div>
